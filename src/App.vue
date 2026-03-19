@@ -8,13 +8,25 @@ const { uids, selectedUID, addUID, removeUID, selectUID } = useUIDs()
 const { results, isProcessing, redeemCodes } = useRedeemer()
 
 const newUIDInput = ref('')
-const couponInput = ref('')
-const useDefaultCodes = ref(false)
+const couponInput = ref(defaultCodes.join('\n'))
+const useManualCodes = ref(false)
 const useCORSProxy = ref(true) // Default to true for better user experience in production
+const cooldownCounter = ref(0)
+let cooldownTimer: any = null
 
-// Watch useDefaultCodes to update the textarea for visual feedback
-watch(useDefaultCodes, (newValue) => {
-  if (newValue) {
+const startCooldown = () => {
+  cooldownCounter.value = 10
+  cooldownTimer = setInterval(() => {
+    cooldownCounter.value--
+    if (cooldownCounter.value <= 0) {
+      clearInterval(cooldownTimer)
+    }
+  }, 1000)
+}
+
+// Watch useManualCodes to update the textarea for visual feedback
+watch(useManualCodes, (newValue) => {
+  if (!newValue) {
     couponInput.value = defaultCodes.join('\n')
   } else {
     couponInput.value = ''
@@ -28,14 +40,13 @@ const handleAddUID = () => {
   }
 }
 
-const handleRedeem = () => {
+const handleRedeem = async () => {
   if (!selectedUID.value) {
     alert('กรุณาเลือกหรือใส่ UID ก่อนนะจ๊ะ')
     return
   }
   
-  const codes = (useDefaultCodes.value ? defaultCodes : couponInput.value
-    .split('\n'))
+  const codes = (useManualCodes.value ? couponInput.value.split('\n') : defaultCodes)
     .map(c => c.trim())
     .filter(c => c.length > 0)
     
@@ -44,7 +55,12 @@ const handleRedeem = () => {
     return
   }
   
-  redeemCodes(selectedUID.value, codes, useCORSProxy.value)
+  if (codes.length > 50) {
+    alert('จำกัดการเติมสูงสุด 50 รหัสต่อครั้ง เพื่อความปลอดภัยของเซิร์ฟเวอร์นะจ๊ะ')
+  }
+  
+  await redeemCodes(selectedUID.value, codes, useCORSProxy.value)
+  startCooldown()
 }
 
 const progress = computed(() => {
@@ -52,6 +68,14 @@ const progress = computed(() => {
   const completed = results.value.filter(r => r.status !== 'pending' && r.status !== 'loading').length
   return Math.round((completed / results.value.length) * 100)
 })
+
+const currentCodes = computed(() => {
+  return (useManualCodes.value ? couponInput.value.split('\n') : defaultCodes)
+    .map(c => c.trim())
+    .filter(c => c.length > 0)
+})
+
+const isOverLimit = computed(() => currentCodes.value.length > 50)
 </script>
 
 <template>
@@ -61,6 +85,15 @@ const progress = computed(() => {
       <div class="text-center">
         <h1 class="text-4xl font-bold text-primary">7+1 อัศวิน: เกิดใหม่กี่โมง?</h1>
         <p class="text-xl opacity-70 mt-2">ระบบช่วยกรอกโค้ดแบบรัวๆ ไม่ต้องพัก</p>
+      </div>
+
+      <!-- Warning/Disclaimer - Only show when over limit -->
+      <div v-if="isOverLimit" class="alert alert-error shadow-lg animate-bounce">
+        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+        <div>
+          <h3 class="font-bold">ใจเย็นๆ นะวัยรุ่น! เยอะเกินไปแล้ว</h3>
+          <div class="text-xs">ใส่รหัสมา {{ currentCodes.length }} รหัส ระบบจะเติมให้แค่ 50 รหัสแรกเท่านั้นนะจ๊ะ เพื่อป้องกันการถูกแบนและถนอมเซิร์ฟเวอร์</div>
+        </div>
       </div>
 
       <!-- UID Management -->
@@ -118,8 +151,8 @@ const progress = computed(() => {
             <h2 class="card-title">2. รหัสคูปอง</h2>
             <div class="form-control">
               <label class="label cursor-pointer gap-2">
-                <span class="label-text font-semibold">โค้ดล่าสุดเท่าที่หาได้ (อัปเดตเองนักเลงพอ)</span> 
-                <input type="checkbox" class="toggle toggle-primary" v-model="useDefaultCodes" :disabled="isProcessing" />
+                <span class="label-text font-semibold">กรอกโค้ดเอง</span> 
+                <input type="checkbox" class="toggle toggle-primary" v-model="useManualCodes" :disabled="isProcessing" />
               </label>
             </div>
           </div>
@@ -131,7 +164,7 @@ const progress = computed(() => {
               class="textarea textarea-bordered h-48 font-mono" 
               placeholder="ใส่โค้ด 1&#10;ใส่โค้ด 2&#10;ใส่โค้ด 3"
               v-model="couponInput"
-              :disabled="isProcessing || useDefaultCodes"
+              :disabled="isProcessing || !useManualCodes"
             ></textarea>
           </div>
           
@@ -145,10 +178,12 @@ const progress = computed(() => {
             <button 
               class="btn btn-primary btn-lg w-full md:w-auto" 
               @click="handleRedeem"
-              :disabled="isProcessing || !selectedUID"
+              :disabled="isProcessing || !selectedUID || cooldownCounter > 0"
             >
               <span v-if="isProcessing" class="loading loading-spinner"></span>
-              {{ isProcessing ? 'กำลังเติม... รอก่อนนะวัยรุ่น' : 'เติมให้หมดนี่เลย!' }}
+              <template v-if="isProcessing">กำลังเติม... รอก่อนนะวัยรุ่น</template>
+              <template v-else-if="cooldownCounter > 0">รออีก {{ cooldownCounter }} วินาทีนะจ๊ะ</template>
+              <template v-else>เติมให้หมดนี่เลย!</template>
             </button>
           </div>
         </div>

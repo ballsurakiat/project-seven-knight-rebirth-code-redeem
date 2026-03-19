@@ -7,6 +7,8 @@ export interface RedeemResult {
   message?: string
 }
 
+const MAX_CODES_PER_BATCH = 50;
+
 export function useRedeemer() {
   const results = ref<RedeemResult[]>([])
   const isProcessing = ref(false)
@@ -17,8 +19,11 @@ export function useRedeemer() {
     if (isProcessing.value) return
     isProcessing.value = true
     
+    // Safety: Limit total codes to prevent misuse as a DDoS tool
+    const safeCodes = codes.slice(0, MAX_CODES_PER_BATCH);
+    
     // Initialize results
-    results.value = codes.map(code => ({
+    results.value = safeCodes.map(code => ({
       code,
       status: 'pending'
     }))
@@ -40,19 +45,17 @@ export function useRedeemer() {
 
         const response = await axios.get(url)
         
-        // Netmarble API usually returns data in response.data
-        // We'll assume success if no exception is thrown for now
-        // Actual structure might need refinement based on real API response
         item.status = 'success'
-        item.message = response.data?.msg || 'Redeemed successfully'
+        item.message = response.data?.msg || 'สำเร็จแล้วจ้า'
       } catch (error: any) {
         item.status = 'error'
-        item.message = error.response?.data?.msg || error.message || 'Failed to redeem'
+        item.message = error.response?.data?.msg || error.message || 'เกิดข้อผิดพลาด'
       }
 
-      // Wait 1 second before next request (except for the last one)
+      // Variable delay (1000ms - 2500ms) to look more like human behavior
       if (i < results.value.length - 1) {
-        await delay(1000)
+        const jitter = Math.floor(Math.random() * 1500) + 1000;
+        await delay(jitter)
       }
     }
 
