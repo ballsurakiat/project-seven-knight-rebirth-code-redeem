@@ -10,6 +10,7 @@ const { results, isProcessing, redeemCodes } = useRedeemer()
 const newUIDInput = ref('')
 const couponInput = ref('')
 const useDefaultCodes = ref(false)
+const useCORSProxy = ref(true) // Default to true for better user experience in production
 
 // Watch useDefaultCodes to update the textarea for visual feedback
 watch(useDefaultCodes, (newValue) => {
@@ -43,7 +44,7 @@ const handleRedeem = () => {
     return
   }
   
-  redeemCodes(selectedUID.value, codes)
+  redeemCodes(selectedUID.value, codes, useCORSProxy.value)
 }
 
 const progress = computed(() => {
@@ -58,7 +59,7 @@ const progress = computed(() => {
     <div class="max-w-3xl mx-auto space-y-6">
       <!-- Header -->
       <div class="text-center">
-        <h1 class="text-4xl font-bold text-primary">เซเว่นไนท์: เกิดใหม่กี่โมง?</h1>
+        <h1 class="text-4xl font-bold text-primary">7+1 อัศวิน: เกิดใหม่กี่โมง?</h1>
         <p class="text-xl opacity-70 mt-2">ระบบช่วยกรอกโค้ดแบบรัวๆ ไม่ต้องพัก</p>
       </div>
 
@@ -134,7 +135,13 @@ const progress = computed(() => {
             ></textarea>
           </div>
           
-          <div class="card-actions justify-end mt-4">
+          <div class="flex flex-col md:flex-row items-center justify-between mt-4 gap-4">
+            <div class="form-control">
+              <label class="label cursor-pointer gap-2">
+                <input type="checkbox" class="checkbox checkbox-sm checkbox-secondary" v-model="useCORSProxy" :disabled="isProcessing" />
+                <span class="label-text-alt">เปิดใช้งาน Proxy (กรณีเติมไม่เข้า/ติด CORS)</span> 
+              </label>
+            </div>
             <button 
               class="btn btn-primary btn-lg w-full md:w-auto" 
               @click="handleRedeem"

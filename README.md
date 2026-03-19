@@ -1,4 +1,4 @@
-# เซเว่นไนท์: เกิดใหม่กี่โมง? (Seven Knight Re:Birth Code Redeemer)
+# 7+1 อัศวิน: เกิดใหม่กี่โมง? (Seven Knight Re:Birth Code Redeemer)
 
 ระบบช่วยกรอกโค้ดคูปองเกม Seven Knight Re:Birth แบบหลายโค้ดพร้อมกัน ไม่ต้องนั่งกดเองให้เมื่อยมือ!
 

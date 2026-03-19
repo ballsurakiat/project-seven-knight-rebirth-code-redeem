@@ -13,7 +13,7 @@ export function useRedeemer() {
 
   const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
-  const redeemCodes = async (pid: string, codes: string[]) => {
+  const redeemCodes = async (pid: string, codes: string[], useProxy: boolean = false) => {
     if (isProcessing.value) return
     isProcessing.value = true
     
@@ -28,9 +28,16 @@ export function useRedeemer() {
       item.status = 'loading'
 
       try {
-        const url = `https://coupon.netmarble.com/api/coupon/reward?gameCode=tskgb&couponCode=${item.code}&langCd=TH_TH&pid=${pid}`
+        let url = `https://coupon.netmarble.com/api/coupon/reward?gameCode=tskgb&couponCode=${item.code}&langCd=TH_TH&pid=${pid}`
         
-        // Use a proxy if CORS is an issue, but for now direct call as requested
+        // Use proxy if enabled (for production)
+        if (useProxy) {
+          url = `https://corsproxy.io/?${encodeURIComponent(url)}`
+        } else if (import.meta.env.DEV) {
+          // In development, use Vite's proxy automatically if not using external proxy
+          url = `/api/coupon/reward?gameCode=tskgb&couponCode=${item.code}&langCd=TH_TH&pid=${pid}`
+        }
+
         const response = await axios.get(url)
         
         // Netmarble API usually returns data in response.data
