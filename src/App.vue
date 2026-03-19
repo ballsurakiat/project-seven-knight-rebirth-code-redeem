@@ -5,13 +5,15 @@ import { useRedeemer } from './composables/useRedeemer'
 import { defaultCodes } from './data/defaultCodes'
 
 const { uids, selectedUID, addUID, removeUID, selectUID } = useUIDs()
-const { results, isProcessing, redeemCodes } = useRedeemer()
+const { results, isProcessing, redeemCodes, stopRedeeming } = useRedeemer()
 
 const newUIDInput = ref('')
+const newNameInput = ref('')
 const couponInput = ref(defaultCodes.join('\n'))
 const useManualCodes = ref(false)
 const useCORSProxy = ref(true) // Default to true for better user experience in production
 const cooldownCounter = ref(0)
+const showResultsModal = ref(false)
 let cooldownTimer: any = null
 
 const startCooldown = () => {
@@ -35,8 +37,9 @@ watch(useManualCodes, (newValue) => {
 
 const handleAddUID = () => {
   if (newUIDInput.value.trim()) {
-    addUID(newUIDInput.value.trim())
+    addUID(newUIDInput.value.trim(), newNameInput.value.trim())
     newUIDInput.value = ''
+    newNameInput.value = ''
   }
 }
 
@@ -55,10 +58,7 @@ const handleRedeem = async () => {
     return
   }
   
-  if (codes.length > 50) {
-    alert('จำกัดการเติมสูงสุด 50 รหัสต่อครั้ง เพื่อความปลอดภัยของเซิร์ฟเวอร์นะจ๊ะ')
-  }
-  
+  showResultsModal.value = true
   await redeemCodes(selectedUID.value, codes, useCORSProxy.value)
   startCooldown()
 }
@@ -84,7 +84,7 @@ const isOverLimit = computed(() => currentCodes.value.length > 50)
       <!-- Header -->
       <div class="text-center">
         <h1 class="text-4xl font-bold text-primary">7+1 อัศวิน: เกิดใหม่กี่โมง?</h1>
-        <p class="text-xl opacity-70 mt-2">ระบบช่วยกรอกโค้ดแบบรัวๆ ไม่ต้องพัก</p>
+        <p class="text-xl opacity-70 mt-2">ระบบช่วยแลกโค้ดแบบรัวๆ</p>
       </div>
 
       <!-- Warning/Disclaimer - Only show when over limit -->
@@ -100,11 +100,11 @@ const isOverLimit = computed(() => currentCodes.value.length > 50)
       <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
           <h2 class="card-title">1. จัดการ UID</h2>
-          <div class="flex flex-col md:flex-row gap-4">
+          <div class="space-y-4">
             <!-- Select Cached UID -->
-            <div class="form-control flex-1">
+            <div class="form-control">
               <label class="label">
-                <span class="label-text">เลือก UID ที่บันทึกไว้</span>
+                <span class="label-text font-semibold">เลือก UID ที่บันทึกไว้</span>
               </label>
               <select 
                 class="select select-bordered w-full" 
@@ -112,34 +112,55 @@ const isOverLimit = computed(() => currentCodes.value.length > 50)
                 @change="selectUID(selectedUID)"
               >
                 <option value="" disabled selected>เลือก UID ของคุณ</option>
-                <option v-for="uid in uids" :key="uid" :value="uid">{{ uid }}</option>
+                <option v-for="uid in uids" :key="uid.id" :value="uid.id">
+                  {{ uid.name ? `${uid.name} (${uid.id})` : uid.id }}
+                </option>
               </select>
             </div>
             
+            <div class="divider">หรือ</div>
+
             <!-- Add New UID -->
-            <div class="form-control flex-1">
-              <label class="label">
-                <span class="label-text">เพิ่ม UID ใหม่</span>
-              </label>
-              <div class="join">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="form-control">
+                <label class="label">
+                  <span class="label-text font-semibold">ใส่ UID</span>
+                </label>
                 <input 
                   type="text" 
-                  placeholder="ใส่ UID ตรงนี้" 
-                  class="input input-bordered w-full join-item" 
+                  placeholder="เช่น ABC12345" 
+                  class="input input-bordered w-full" 
                   v-model="newUIDInput"
-                  @keyup.enter="handleAddUID"
                 />
-                <button class="btn btn-primary join-item" @click="handleAddUID">เพิ่ม</button>
+              </div>
+              <div class="form-control">
+                <label class="label">
+                  <span class="label-text font-semibold">ตั้งชื่อ (Optional)</span>
+                </label>
+                <div class="join">
+                  <input 
+                    type="text" 
+                    placeholder="เช่น ไอดีหลัก" 
+                    class="input input-bordered w-full join-item" 
+                    v-model="newNameInput"
+                    @keyup.enter="handleAddUID"
+                  />
+                  <button class="btn btn-primary join-item" @click="handleAddUID">เพิ่ม</button>
+                </div>
               </div>
             </div>
           </div>
           
           <!-- Selected UID Indicator & Removal -->
-          <div v-if="selectedUID" class="mt-4 flex items-center justify-between bg-base-200 p-3 rounded-lg">
+          <div v-if="selectedUID" class="mt-4 flex items-center justify-between bg-base-200 p-3 rounded-lg border border-base-300">
             <div>
-              UID ที่ใช้อยู่: <span class="font-bold text-secondary">{{ selectedUID }}</span>
+              <span class="text-xs opacity-50 block uppercase font-bold">กำลังใช้งาน</span>
+              <span class="font-bold text-secondary text-lg">
+                {{ uids.find(u => u.id === selectedUID)?.name || '' }}
+              </span>
+              <span class="text-sm ml-1 opacity-70">({{ selectedUID }})</span>
             </div>
-            <button class="btn btn-ghost btn-xs text-error" @click="removeUID(selectedUID)">ลบทิ้งซะ</button>
+            <button class="btn btn-ghost btn-xs text-error hover:bg-error/10" @click="removeUID(selectedUID)">ลบทิ้ง</button>
           </div>
         </div>
       </div>
@@ -189,51 +210,75 @@ const isOverLimit = computed(() => currentCodes.value.length > 50)
         </div>
       </div>
 
-      <!-- Results -->
-      <div v-if="results.length > 0" class="card bg-base-100 shadow-xl">
-        <div class="card-body">
-          <div class="flex items-center justify-between mb-2">
-            <h2 class="card-title">3. ผลการเติมโค้ด</h2>
-            <div class="badge badge-lg" :class="progress === 100 ? 'badge-success' : 'badge-primary'">
-              สำเร็จไปแล้ว {{ progress }}%
-            </div>
-          </div>
-          
-          <progress 
-            class="progress w-full mb-4" 
-            :value="progress" 
-            max="100"
-            :class="progress === 100 ? 'progress-success' : 'progress-primary'"
-          ></progress>
+    </div>
 
-          <div class="overflow-x-auto max-h-96 overflow-y-auto border border-base-200 rounded-lg">
-            <table class="table table-zebra w-full">
-              <thead>
-                <tr>
-                  <th>รหัส</th>
-                  <th>สถานะ</th>
-                  <th>ข้อความจากเซิร์ฟเวอร์</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="item in results" :key="item.code">
-                  <td class="font-mono">{{ item.code }}</td>
-                  <td>
-                    <div v-if="item.status === 'pending'" class="badge badge-ghost">รอคิว</div>
-                    <div v-else-if="item.status === 'loading'" class="flex items-center gap-2">
-                      <span class="loading loading-spinner loading-xs text-info"></span>
-                      <span class="text-info">กำลังทำรายการ</span>
-                    </div>
-                    <div v-else-if="item.status === 'success'" class="badge badge-success">เย้! สำเร็จ</div>
-                    <div v-else-if="item.status === 'error'" class="badge badge-error">ว้าย! พลาด</div>
-                  </td>
-                  <td class="text-sm max-w-xs truncate" :title="item.message">
-                    {{ item.message || '-' }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+    <!-- Footer -->
+    <footer class="max-w-3xl mx-auto mt-8 mb-8 text-center text-sm opacity-50 px-4">
+      <p>พัฒนาขึ้นเพื่อความสะดวกของชาวอัศวิน โดย <a href="https://github.com/ballsurakiat/project-seven-knight-rebirth-code-redeem" target="_blank" class="link link-hover font-bold">ballsurakiat</a></p>
+      <p class="mt-1">ห้ามนำไปใช้ในเชิงพาณิชย์โดยเด็ดขาด</p>
+    </footer>
+
+    <!-- Results Modal -->
+    <div class="modal" :class="{ 'modal-open': showResultsModal }">
+      <div class="modal-box max-w-4xl">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-bold text-lg">3. ผลการเติมโค้ด</h3>
+          <div class="badge badge-lg" :class="progress === 100 ? 'badge-success' : 'badge-primary'">
+            สำเร็จไปแล้ว {{ progress }}%
           </div>
+        </div>
+        
+        <progress 
+          class="progress w-full mb-4" 
+          :value="progress" 
+          max="100"
+          :class="progress === 100 ? 'progress-success' : 'progress-primary'"
+        ></progress>
+
+        <div class="overflow-x-auto max-h-[60vh] overflow-y-auto border border-base-200 rounded-lg">
+          <table class="table table-zebra w-full table-pin-rows">
+            <thead>
+              <tr>
+                <th>รหัส</th>
+                <th>สถานะ</th>
+                <th>ข้อความจากเซิร์ฟเวอร์</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in results" :key="item.code">
+                <td class="font-mono">{{ item.code }}</td>
+                <td>
+                  <div v-if="item.status === 'pending'" class="badge badge-ghost">รอคิว</div>
+                  <div v-else-if="item.status === 'loading'" class="flex items-center gap-2">
+                    <span class="loading loading-spinner loading-xs text-info"></span>
+                    <span class="text-info">กำลังทำรายการ</span>
+                  </div>
+                  <div v-else-if="item.status === 'success'" class="badge badge-success">เย้! สำเร็จ</div>
+                  <div v-else-if="item.status === 'error'" class="badge badge-error">ว้าย! พลาด</div>
+                </td>
+                <td class="text-sm">
+                  {{ item.message || '-' }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="modal-action">
+          <button 
+            v-if="isProcessing" 
+            class="btn btn-error btn-outline" 
+            @click="stopRedeeming"
+          >
+            หยุดประมวลผล
+          </button>
+          <button 
+            v-else 
+            class="btn" 
+            @click="showResultsModal = false"
+          >
+            ปิดหน้าต่าง
+          </button>
         </div>
       </div>
     </div>
