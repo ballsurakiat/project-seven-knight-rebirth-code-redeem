@@ -243,29 +243,23 @@ const isOverLimit = computed(() => currentCodes.value.length > 50)
       </div>
 
       <!-- Ads / Sponsored Section -->
-      <div class="card bg-base-100 shadow-xl border-2 border-dashed border-primary/20 overflow-hidden group">
+      <div class="card bg-base-100 shadow-xl border border-primary/10 overflow-hidden group">
         <div class="bg-primary/5 px-4 py-2 flex items-center justify-between border-b border-primary/10">
-          <span class="text-[10px] font-bold uppercase tracking-[0.2em] opacity-40">Sponsored Space</span>
-          <div class="flex gap-1">
-            <div class="w-2 h-2 rounded-full bg-primary/20"></div>
-            <div class="w-2 h-2 rounded-full bg-primary/40"></div>
+          <div class="flex items-center gap-2">
+            <span class="relative flex h-2 w-2">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+            </span>
+            <span class="text-[10px] font-bold uppercase tracking-[0.2em] opacity-60">Sponsored by Guild 3เดือนเลิก</span>
           </div>
+          <span class="text-[10px] font-medium opacity-40 italic">สนับสนุนเซิร์ฟเวอร์</span>
         </div>
         <div class="card-body p-0">
-          <div class="relative w-full aspect-[16/5] md:aspect-[21/5] bg-base-300 flex items-center justify-center transition-all group-hover:bg-base-200">
-            <!-- This is where the actual Ad Image/Script would go -->
-            <div class="flex flex-col items-center gap-2 opacity-30 group-hover:opacity-50 transition-opacity">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor" class="w-12 h-12">
-                <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6.75a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6.75v10.5a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
-              </svg>
-              <span class="text-sm font-medium">พื้นที่โฆษณา / Sponsored Banner</span>
-            </div>
-            
-            <!-- Optional: "Advertise here" button that appears on hover -->
-            <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-primary/10 backdrop-blur-[2px]">
-              <a href="https://github.com/ballsurakiat/project-seven-knight-rebirth-code-redeem" target="_blank" class="btn btn-primary btn-sm shadow-lg">ติดต่อโฆษณา</a>
-            </div>
-          </div>
+          <img 
+            src="/ads.jpg" 
+            alt="กิลด์ 3เดือนเลิก รับสมัครสมาชิก" 
+            class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
         </div>
       </div>
 
