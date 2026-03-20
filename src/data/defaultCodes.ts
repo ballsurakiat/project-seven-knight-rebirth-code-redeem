@@ -1,2 +1,1 @@
-export const defaultCodes: string[] = [
-];
+export const defaultCodes: string[] = ["SKRE300BIRTH"];

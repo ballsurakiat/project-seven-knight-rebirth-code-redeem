@@ -16,6 +16,9 @@ const withSetup = (composable: any) => {
 }
 
 describe('useUIDs', () => {
+  const STORAGE_KEY = 'skr_uids_v2'
+  const LAST_UID_KEY = 'skr_last_uid'
+
   beforeEach(() => {
     localStorage.clear()
     vi.clearAllMocks()
@@ -31,19 +34,20 @@ describe('useUIDs', () => {
     const [uidsStore] = withSetup(useUIDs)
     uidsStore.addUID('TEST-UID-1')
     
-    expect(uidsStore.uids.value).toContain('TEST-UID-1')
+    expect(uidsStore.uids.value.map((u: any) => u.id)).toContain('TEST-UID-1')
     expect(uidsStore.selectedUID.value).toBe('TEST-UID-1')
     
-    const stored = JSON.parse(localStorage.getItem('skr_uids') || '[]')
-    expect(stored).toContain('TEST-UID-1')
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
+    expect(stored.map((u: any) => u.id)).toContain('TEST-UID-1')
   })
 
-  it('should not add duplicate UIDs', () => {
+  it('should not add duplicate UIDs but update name if provided', () => {
     const [uidsStore] = withSetup(useUIDs)
-    uidsStore.addUID('TEST-UID-1')
-    uidsStore.addUID('TEST-UID-1')
+    uidsStore.addUID('TEST-UID-1', 'Initial Name')
+    uidsStore.addUID('TEST-UID-1', 'Updated Name')
     
     expect(uidsStore.uids.value).toHaveLength(1)
+    expect(uidsStore.uids.value[0].name).toBe('Updated Name')
   })
 
   it('should remove a UID and update selectedUID if it was removed', () => {
@@ -55,22 +59,24 @@ describe('useUIDs', () => {
     expect(uidsStore.selectedUID.value).toBe('UID-2')
     
     uidsStore.removeUID('UID-2')
-    expect(uidsStore.uids.value).not.toContain('UID-2')
+    expect(uidsStore.uids.value.map((u: any) => u.id)).not.toContain('UID-2')
     expect(uidsStore.selectedUID.value).toBe('UID-1')
   })
 
   it('should load UIDs from localStorage on mount', async () => {
-    localStorage.setItem('skr_uids', JSON.stringify(['SAVED-1', 'SAVED-2']))
-    localStorage.setItem('skr_last_uid', 'SAVED-2')
+    const savedData = [
+      { id: 'SAVED-1', name: 'Name 1' },
+      { id: 'SAVED-2', name: 'Name 2' }
+    ]
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(savedData))
+    localStorage.setItem(LAST_UID_KEY, 'SAVED-2')
     
     const [uidsStore] = withSetup(useUIDs)
     
     // onMounted logic in composable needs a tick
     await nextTick()
     
-    // In our implementation, we call loadUIDs in setup (via onMounted)
-    // but the actual state update depends on when the component is mounted
-    expect(uidsStore.uids.value).toEqual(['SAVED-1', 'SAVED-2'])
+    expect(uidsStore.uids.value).toEqual(savedData)
     expect(uidsStore.selectedUID.value).toBe('SAVED-2')
   })
 })

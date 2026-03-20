@@ -22,7 +22,7 @@ export function useRedeemer() {
     }
   }
 
-  const redeemCodes = async (pid: string, codes: string[], useProxy: boolean = false) => {
+  const redeemCodes = async (pid: string, codes: string[]) => {
     if (isProcessing.value) return
     isProcessing.value = true
     shouldStop.value = false
@@ -51,13 +51,7 @@ export function useRedeemer() {
         item.status = 'loading'
 
         try {
-          let url = `https://coupon.netmarble.com/api/coupon/reward?gameCode=tskgb&couponCode=${item.code}&langCd=TH_TH&pid=${pid}`
-          
-          if (useProxy) {
-            url = `https://corsproxy.io/?${encodeURIComponent(url)}`
-          } else if ((import.meta as any).env?.DEV) {
-            url = `/api/coupon/reward?gameCode=tskgb&couponCode=${item.code}&langCd=TH_TH&pid=${pid}`
-          }
+          const url = `/api/coupon/reward?gameCode=tskgb&couponCode=${item.code}&langCd=TH_TH&pid=${pid}`
           const response = await axios.get(url)
           
           if (response.data?.errorCode === 24001) {

@@ -40,8 +40,8 @@ export const defaultCodes: string[] = [
 ```
 
 ## หมายเหตุ (Disclaimer)
-- การใช้งานอาจติดปัญหาเรื่อง **CORS** เมื่อเรียก API ของ Netmarble โดยตรงจากเบราว์เซอร์ หากพบปัญหาสามารถใช้ Browser Extension สำหรับข้าม CORS หรือรันผ่าน Proxy ได้
-- API ที่ใช้: `https://coupon.netmarble.com/api/coupon/reward?gameCode=tskgb&couponCode={{code}}&langCd=TH_TH&pid={{id}}`
+- โปรเจกต์นี้ได้รับการตั้งค่าให้ข้ามปัญหา **CORS** อัตโนมัติเมื่อใช้งานผ่าน Vercel (https://7kredeem.vercel.app/) โดยใช้ระบบ Rewrites เป็น Proxy
+- API ที่ใช้: `/api/coupon/reward?gameCode=tskgb&couponCode={{code}}&langCd=TH_TH&pid={{id}}`
 
 ---
 *จัดทำขึ้นเพื่อความสะดวกของชาวเซเว่นไนท์เท่านั้น ห้ามจำหน่าย หรือใช้ในเชิงพานิชย์*
