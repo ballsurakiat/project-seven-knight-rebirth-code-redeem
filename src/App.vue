@@ -11,7 +11,6 @@ const newUIDInput = ref('')
 const newNameInput = ref('')
 const couponInput = ref(defaultCodes.join('\n'))
 const useManualCodes = ref(true)
-const useCORSProxy = ref(true) // Default to true for better user experience in production
 const cooldownCounter = ref(0)
 const showResultsModal = ref(false)
 let cooldownTimer: any = null
@@ -59,7 +58,7 @@ const handleRedeem = async () => {
   }
   
   showResultsModal.value = true
-  await redeemCodes(selectedUID.value, codes, useCORSProxy.value)
+  await redeemCodes(selectedUID.value, codes)
   startCooldown()
 }
 
@@ -190,12 +189,6 @@ const isOverLimit = computed(() => currentCodes.value.length > 50)
           </div>
           
           <div class="flex flex-col md:flex-row items-center justify-between mt-4 gap-4">
-            <div class="form-control">
-              <label class="label cursor-pointer gap-2">
-                <input type="checkbox" class="checkbox checkbox-sm checkbox-secondary" v-model="useCORSProxy" :disabled="isProcessing" />
-                <span class="label-text-alt">เปิดใช้งาน Proxy (กรณีเติมไม่เข้า/ติด CORS)</span> 
-              </label>
-            </div>
             <button 
               class="btn btn-primary btn-lg w-full md:w-auto" 
               @click="handleRedeem"
