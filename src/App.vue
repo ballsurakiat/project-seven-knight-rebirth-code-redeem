@@ -10,7 +10,7 @@ const { results, isProcessing, redeemCodes, stopRedeeming } = useRedeemer()
 const newUIDInput = ref('')
 const newNameInput = ref('')
 const couponInput = ref(defaultCodes.join('\n'))
-const useManualCodes = ref(true)
+const useManualCodes = ref(false)
 const cooldownCounter = ref(0)
 const showResultsModal = ref(false)
 let cooldownTimer: any = null
@@ -98,32 +98,40 @@ const isOverLimit = computed(() => currentCodes.value.length > 50)
       <!-- UID Management -->
       <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
-          <h2 class="card-title">1. จัดการ UID</h2>
+          <h2 class="card-title flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-primary">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+            </svg>
+            1. จัดการ UID
+          </h2>
           <div class="space-y-4">
-            <!-- Select Cached UID -->
-            <div class="form-control">
-              <label class="label">
-                <span class="label-text font-semibold">เลือก UID ที่บันทึกไว้</span>
-              </label>
-              <select 
-                class="select select-bordered w-full" 
-                v-model="selectedUID"
-                @change="selectUID(selectedUID)"
-              >
-                <option value="" disabled selected>เลือก UID ของคุณ</option>
-                <option v-for="uid in uids" :key="uid.id" :value="uid.id">
-                  {{ uid.name ? `${uid.name} (${uid.id})` : uid.id }}
-                </option>
-              </select>
-            </div>
-            
-            <div class="divider">หรือ</div>
+            <!-- Select Cached UID (Only if exists) -->
+            <template v-if="uids.length > 0">
+              <div class="form-control">
+                <label class="label">
+                  <span class="label-text font-semibold">เลือก UID ที่บันทึกไว้</span>
+                  <span class="label-text-alt opacity-50 italic">* บันทึกในเบราว์เซอร์ของคุณเท่านั้น</span>
+                </label>
+                <select 
+                  class="select select-bordered w-full" 
+                  v-model="selectedUID"
+                  @change="selectUID(selectedUID)"
+                >
+                  <option value="" disabled selected>เลือก UID ของคุณ</option>
+                  <option v-for="uid in uids" :key="uid.id" :value="uid.id">
+                    {{ uid.name ? `${uid.name} (${uid.id})` : uid.id }}
+                  </option>
+                </select>
+              </div>
+              
+              <div class="divider">หรือเพิ่มใหม่</div>
+            </template>
 
             <!-- Add New UID -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div class="form-control">
                 <label class="label">
-                  <span class="label-text font-semibold">ใส่ UID</span>
+                  <span class="label-text font-semibold">ใส่ UID ใหม่</span>
                 </label>
                 <input 
                   type="text" 
@@ -134,9 +142,9 @@ const isOverLimit = computed(() => currentCodes.value.length > 50)
               </div>
               <div class="form-control">
                 <label class="label">
-                  <span class="label-text font-semibold">ตั้งชื่อ (Optional)</span>
+                  <span class="label-text font-semibold">ตั้งชื่อเล่น (Optional)</span>
                 </label>
-                <div class="join">
+                <div class="join w-full">
                   <input 
                     type="text" 
                     placeholder="เช่น ไอดีหลัก" 
@@ -151,15 +159,29 @@ const isOverLimit = computed(() => currentCodes.value.length > 50)
           </div>
           
           <!-- Selected UID Indicator & Removal -->
-          <div v-if="selectedUID" class="mt-4 flex items-center justify-between bg-base-200 p-3 rounded-lg border border-base-300">
-            <div>
-              <span class="text-xs opacity-50 block uppercase font-bold">กำลังใช้งาน</span>
-              <span class="font-bold text-secondary text-lg">
-                {{ uids.find(u => u.id === selectedUID)?.name || '' }}
-              </span>
-              <span class="text-sm ml-1 opacity-70">({{ selectedUID }})</span>
+          <div v-if="selectedUID" class="mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between bg-primary/5 p-4 rounded-xl border border-primary/10 gap-4">
+            <div class="flex items-center gap-3 w-full sm:w-auto overflow-hidden">
+              <div class="avatar placeholder shrink-0">
+                <div class="bg-primary text-primary-content rounded-full w-10">
+                  <span class="text-xs">{{ (uids.find(u => u.id === selectedUID)?.name || 'U').charAt(0).toUpperCase() }}</span>
+                </div>
+              </div>
+              <div class="overflow-hidden">
+                <span class="text-[10px] opacity-60 block uppercase font-bold tracking-wider">กำลังใช้งาน</span>
+                <div class="flex flex-col sm:flex-row sm:items-baseline sm:gap-2 overflow-hidden">
+                  <span class="font-bold text-lg leading-tight truncate">
+                    {{ uids.find(u => u.id === selectedUID)?.name || 'ไม่ระบุชื่อ' }}
+                  </span>
+                  <span class="text-xs opacity-50 font-mono truncate">({{ selectedUID }})</span>
+                </div>
+              </div>
             </div>
-            <button class="btn btn-ghost btn-xs text-error hover:bg-error/10" @click="removeUID(selectedUID)">ลบทิ้ง</button>
+            <button class="btn btn-error btn-outline btn-sm sm:btn-ghost sm:btn-circle sm:text-error hover:bg-error/10 w-full sm:w-auto gap-2" @click="removeUID(selectedUID)">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+              </svg>
+              <span class="sm:hidden">ลบ UID นี้</span>
+            </button>
           </div>
         </div>
       </div>
@@ -168,37 +190,81 @@ const isOverLimit = computed(() => currentCodes.value.length > 50)
       <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-2">
-            <h2 class="card-title">2. รหัสคูปอง</h2>
+            <h2 class="card-title flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-primary">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
+              </svg>
+              2. รหัสคูปอง
+            </h2>
             <div class="form-control">
-              <label class="label cursor-pointer gap-2">
-                <span class="label-text font-semibold">กรอกโค้ดเอง</span> 
-                <input type="checkbox" class="toggle toggle-primary" v-model="useManualCodes" :disabled="isProcessing" />
+              <label class="label cursor-pointer gap-3 bg-base-200 px-4 py-1 rounded-full">
+                <span class="label-text font-bold text-xs uppercase tracking-widest">กรอกโค้ดเอง</span> 
+                <input type="checkbox" class="toggle toggle-primary toggle-sm" v-model="useManualCodes" :disabled="isProcessing" />
               </label>
             </div>
           </div>
           <div class="form-control">
             <label class="label">
-              <span class="label-text">ใส่รหัสคูปอง (1 รหัสต่อ 1 บรรทัด)</span>
+              <span class="label-text opacity-70">ใส่รหัสคูปอง (1 รหัสต่อ 1 บรรทัด)</span>
             </label>
             <textarea 
-              class="textarea textarea-bordered h-48 font-mono" 
+              class="textarea textarea-bordered h-48 font-mono text-sm focus:textarea-primary transition-all" 
               placeholder="ใส่โค้ด 1&#10;ใส่โค้ด 2&#10;ใส่โค้ด 3"
               v-model="couponInput"
               :disabled="isProcessing || !useManualCodes"
             ></textarea>
           </div>
           
-          <div class="flex flex-col md:flex-row items-center justify-between mt-4 gap-4">
+          <div class="flex flex-col items-center justify-center mt-6 gap-4">
             <button 
-              class="btn btn-primary btn-lg w-full md:w-auto" 
+              class="btn btn-primary btn-lg w-full md:btn-wide shadow-lg hover:shadow-primary/20 transition-all gap-3" 
               @click="handleRedeem"
               :disabled="isProcessing || !selectedUID || cooldownCounter > 0"
             >
               <span v-if="isProcessing" class="loading loading-spinner"></span>
-              <template v-if="isProcessing">กำลังเติม... รอก่อนนะวัยรุ่น</template>
-              <template v-else-if="cooldownCounter > 0">รออีก {{ cooldownCounter }} วินาทีนะจ๊ะ</template>
-              <template v-else>เติมให้หมดนี่เลย!</template>
+              <svg v-else-if="cooldownCounter > 0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 animate-pulse">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+              </svg>
+              <svg v-else xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.59 14.37a6 6 0 0 1-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 0 0 6.16-12.12A14.98 14.98 0 0 0 9.631 8.41m5.96 5.96a14.926 14.926 0 0 1-5.841 2.58m-.119-8.54a6 6 0 0 0-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 0 0-2.58 5.84m2.699-2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 0 1-2.448-2.448 14.9 14.9 0 0 1 .06-.312m-2.24 2.39a4.493 4.493 0 0 0-1.757 4.306 4.493 4.493 0 0 0 4.306-1.758M16.5 9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" />
+              </svg>
+
+              <span class="font-bold tracking-wide">
+                <template v-if="isProcessing">กำลังเติม...</template>
+                <template v-else-if="cooldownCounter > 0">รออีก {{ cooldownCounter }} วินาที</template>
+                <template v-else>
+                  {{ currentCodes.length > 1 ? `เติมรหัสทั้งหมด (${currentCodes.length})` : 'เติมรหัสนี้เลย' }}
+                </template>
+              </span>
             </button>
+            <p v-if="!selectedUID" class="text-xs text-error font-medium animate-pulse">กรุณาเลือกหรือใส่ UID ก่อนจ้า</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ads / Sponsored Section -->
+      <div class="card bg-base-100 shadow-xl border-2 border-dashed border-primary/20 overflow-hidden group">
+        <div class="bg-primary/5 px-4 py-2 flex items-center justify-between border-b border-primary/10">
+          <span class="text-[10px] font-bold uppercase tracking-[0.2em] opacity-40">Sponsored Space</span>
+          <div class="flex gap-1">
+            <div class="w-2 h-2 rounded-full bg-primary/20"></div>
+            <div class="w-2 h-2 rounded-full bg-primary/40"></div>
+          </div>
+        </div>
+        <div class="card-body p-0">
+          <div class="relative w-full aspect-[16/5] md:aspect-[21/5] bg-base-300 flex items-center justify-center transition-all group-hover:bg-base-200">
+            <!-- This is where the actual Ad Image/Script would go -->
+            <div class="flex flex-col items-center gap-2 opacity-30 group-hover:opacity-50 transition-opacity">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor" class="w-12 h-12">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6.75a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6.75v10.5a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+              </svg>
+              <span class="text-sm font-medium">พื้นที่โฆษณา / Sponsored Banner</span>
+            </div>
+            
+            <!-- Optional: "Advertise here" button that appears on hover -->
+            <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-primary/10 backdrop-blur-[2px]">
+              <a href="https://github.com/ballsurakiat/project-seven-knight-rebirth-code-redeem" target="_blank" class="btn btn-primary btn-sm shadow-lg">ติดต่อโฆษณา</a>
+            </div>
           </div>
         </div>
       </div>
