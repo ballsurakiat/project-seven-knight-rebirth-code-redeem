@@ -1,8 +1,8 @@
 {
   "rewrites": [
     {
-      "source": "/api/coupon/:path*",
-      "destination": "https://coupon.netmarble.com/api/coupon/:path*"
+      "source": "/api/coupon(.*)",
+      "destination": "https://coupon.netmarble.com/api/coupon$1"
     },
     {
       "source": "/(.*)",

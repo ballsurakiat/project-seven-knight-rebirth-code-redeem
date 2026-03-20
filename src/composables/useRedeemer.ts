@@ -49,6 +49,7 @@ export function useRedeemer() {
 
         const item = results.value[i]
         item.status = 'loading'
+        item.message = 'กำลังตรวจสอบรหัส...'
 
         try {
           const url = `/api/coupon/reward?gameCode=tskgb&couponCode=${item.code}&langCd=TH_TH&pid=${pid}`
@@ -60,8 +61,38 @@ export function useRedeemer() {
             return; // Exit loop and function
           }
 
-          item.status = 'success'
-          item.message = response.data?.msg || response.data?.errorMessage || 'สำเร็จแล้วจ้า'
+          if (!response.data?.success) {
+            item.status = 'error'
+            item.message = response.data?.errorMessage || 'รหัสไม่ถูกต้องหรือถูกใช้ไปแล้ว'
+            continue;
+          }
+
+          item.message = 'กำลังรับรางวัล...'
+
+          // Call POST to confirm redemption
+          const postUrl = '/api/coupon'
+          const postPayload = {
+            gameCode: 'tskgb',
+            couponCode: item.code,
+            langCd: 'TH_TH',
+            pid: pid
+          }
+          
+          const postResponse = await axios.post(postUrl, postPayload)
+          
+          if (postResponse.data?.errorCode === 24001) {
+            item.status = 'error'
+            item.message = 'ใส่โค้ดผิดเกิน 10 ครั้งแล้วจ้า! ต้องรออีก 1 ชั่วโมงถึงจะเติมใหม่ได้นะ'
+            return; // Exit loop and function
+          }
+
+          if (postResponse.data?.success) {
+            item.status = 'success'
+            item.message = postResponse.data?.errorMessage || 'สำเร็จแล้วจ้า'
+          } else {
+            item.status = 'error'
+            item.message = postResponse.data?.errorMessage || 'เกิดข้อผิดพลาดในการยืนยัน'
+          }
         } catch (error: any) {
           item.status = 'error'
           const data = error.response?.data
