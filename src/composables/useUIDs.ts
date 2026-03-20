@@ -1,4 +1,4 @@
-import { ref, watch, onMounted } from 'vue'
+import { ref } from 'vue'
 
 export interface UIDRecord {
   id: string
@@ -9,41 +9,54 @@ const STORAGE_KEY = 'skr_uids_v2'
 const OLD_STORAGE_KEY = 'skr_uids'
 const LAST_UID_KEY = 'skr_last_uid'
 
+// Global state to persist across different components/calls
+const uids = ref<UIDRecord[]>([])
+const selectedUID = ref<string>('')
+const isInitialized = ref(false)
+
+const saveUIDs = () => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(uids.value))
+}
+
+const loadUIDs = () => {
+  if (isInitialized.value) return
+  
+  // Migration logic
+  const oldStored = localStorage.getItem(OLD_STORAGE_KEY)
+  if (oldStored) {
+    try {
+      const oldUids: string[] = JSON.parse(oldStored)
+      uids.value = oldUids.map(id => ({ id, name: '' }))
+      saveUIDs()
+      localStorage.removeItem(OLD_STORAGE_KEY)
+    } catch (e) {}
+  }
+
+  const stored = localStorage.getItem(STORAGE_KEY)
+  if (stored) {
+    try {
+      uids.value = JSON.parse(stored)
+    } catch (e) {
+      uids.value = []
+    }
+  }
+  
+  const last = localStorage.getItem(LAST_UID_KEY)
+  if (last && uids.value.some(u => u.id === last)) {
+    selectedUID.value = last
+  } else if (uids.value.length > 0) {
+    selectedUID.value = uids.value[uids.value.length - 1].id
+  }
+  
+  isInitialized.value = true
+}
+
+// Load immediately when this module is imported
+if (typeof window !== 'undefined') {
+  loadUIDs()
+}
+
 export function useUIDs() {
-  const uids = ref<UIDRecord[]>([])
-  const selectedUID = ref<string>('')
-
-  const loadUIDs = () => {
-    // Migration logic
-    const oldStored = localStorage.getItem(OLD_STORAGE_KEY)
-    if (oldStored) {
-      try {
-        const oldUids: string[] = JSON.parse(oldStored)
-        uids.value = oldUids.map(id => ({ id, name: '' }))
-        saveUIDs()
-        localStorage.removeItem(OLD_STORAGE_KEY)
-      } catch (e) {}
-    }
-
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored) {
-      try {
-        uids.value = JSON.parse(stored)
-      } catch (e) {
-        uids.value = []
-      }
-    }
-    
-    const last = localStorage.getItem(LAST_UID_KEY)
-    if (last) {
-      selectedUID.value = last
-    }
-  }
-
-  const saveUIDs = () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(uids.value))
-  }
-
   const addUID = (id: string, name: string = '') => {
     const cleanID = id.trim()
     const cleanName = name.trim()
@@ -74,13 +87,19 @@ export function useUIDs() {
     localStorage.setItem(LAST_UID_KEY, id)
   }
 
-  onMounted(loadUIDs)
+  const resetUIDs = () => {
+    uids.value = []
+    selectedUID.value = ''
+    isInitialized.value = false
+    loadUIDs()
+  }
 
   return {
     uids,
     selectedUID,
     addUID,
     removeUID,
-    selectUID
+    selectUID,
+    resetUIDs
   }
 }

@@ -21,6 +21,8 @@ describe('useUIDs', () => {
 
   beforeEach(() => {
     localStorage.clear()
+    const [uidsStore] = withSetup(useUIDs)
+    uidsStore.resetUIDs()
     vi.clearAllMocks()
   })
 
@@ -72,8 +74,26 @@ describe('useUIDs', () => {
     localStorage.setItem(LAST_UID_KEY, 'SAVED-2')
     
     const [uidsStore] = withSetup(useUIDs)
+    uidsStore.resetUIDs() // Force reload from localStorage
     
     // onMounted logic in composable needs a tick
+    await nextTick()
+    
+    expect(uidsStore.uids.value).toEqual(savedData)
+    expect(uidsStore.selectedUID.value).toBe('SAVED-2')
+  })
+
+  it('should default to last item in list if no last_uid in localStorage', async () => {
+    const savedData = [
+      { id: 'SAVED-1', name: 'Name 1' },
+      { id: 'SAVED-2', name: 'Name 2' }
+    ]
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(savedData))
+    localStorage.removeItem(LAST_UID_KEY)
+    
+    const [uidsStore] = withSetup(useUIDs)
+    uidsStore.resetUIDs() // Force reload from localStorage
+    
     await nextTick()
     
     expect(uidsStore.uids.value).toEqual(savedData)
