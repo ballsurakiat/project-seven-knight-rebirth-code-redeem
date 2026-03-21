@@ -55,7 +55,9 @@ watch([newUIDInput, saveUIDCheckbox, showAddInput], ([newVal, isSave, isShowing]
 
 const handleAddUID = () => {
   const cleanID = newUIDInput.value.trim()
-  if (cleanID && saveUIDCheckbox.value) {
+  const shouldSave = saveUIDCheckbox.value || props.uids.length > 0
+  
+  if (cleanID && shouldSave) {
     emit('add', cleanID, newNameInput.value.trim())
     newUIDInput.value = ''
     newNameInput.value = ''
